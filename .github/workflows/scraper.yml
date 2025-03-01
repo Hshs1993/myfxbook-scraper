@@ -25,8 +25,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y wget unzip curl jq
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
-          echo "$CHROME_VERSION"
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' )
+          echo "chrome version: $CHROME_VERSION"
           DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json" | jq -r ".builds[\"$CHROME_VERSION\"].downloads.chromeDriver[] | select(.platform == \"linux64\").url")
           if [ -z "$DRIVER_URL" ]; then echo "❌ ERRORE: Nessun link trovato per ChromeDriver"; exit 1; fi
           echo "✅ Trovato ChromeDriver URL: $DRIVER_URL"
