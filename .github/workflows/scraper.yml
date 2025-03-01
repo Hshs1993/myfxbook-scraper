@@ -26,16 +26,13 @@ jobs:
           sudo apt update
           sudo apt install -y wget unzip curl jq
           CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
-          DRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_$CHROME_VERSION")
-          DRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION.0.0/chromedriver-linux64.zip"
-          echo "Scaricando ChromeDriver versione $DRIVER_VERSION"
-          wget "$DRIVER_URL" -O chromedriver-linux64.zip || { echo "❌ ERRORE: ChromeDriver non trovato!"; exit 1; }
+          DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json" | jq -r ".builds[\"$CHROME_VERSION\"].downloads.chromeDriver[] | select(.platform == \"linux64\").url")
+          if [ -z "$DRIVER_URL" ]; then echo "❌ ERRORE: Nessun link trovato per ChromeDriver"; exit 1; fi
+          echo "✅ Trovato ChromeDriver URL: $DRIVER_URL"
+          wget "$DRIVER_URL" -O chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           chmod +x /usr/local/bin/chromedriver
-
-
-
 
       - name: Run scraper
         run: python scraper.py
