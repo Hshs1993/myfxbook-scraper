@@ -26,7 +26,7 @@ jobs:
       - name: Run the scraper
         run: python scraper.py
 
-      - name: Debug: Mostra i file nel repository
+      - name: Debug Mostra i file nel repository
         run: |
           ls -lah
           git status
