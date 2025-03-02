@@ -25,35 +25,37 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y wget unzip curl jq
-          
+
           # Trova la versione principale di Chrome installata
           CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
           CHROME_MAJOR=$(echo $CHROME_VERSION | cut -d'.' -f1)
-          
+
           echo "🔍 Versione di Chrome rilevata: $CHROME_VERSION (Major: $CHROME_MAJOR)"
-          
-          # Controlla se esiste una versione di ChromeDriver corrispondente
+
+          # Prova a trovare la versione esatta di ChromeDriver
           DRIVER_INFO=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json" | jq -r ".builds[\"$CHROME_MAJOR\"]")
-          
-          # Se non trova la versione esatta, scarica l'ultima versione disponibile
+
           if [ "$DRIVER_INFO" = "null" ] || [ -z "$DRIVER_INFO" ]; then
-            echo "⚠️ Nessuna versione esatta trovata per ChromeDriver $CHROME_MAJOR, scarico l'ultima versione disponibile..."
-            LATEST_DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-versions-per-milestone-with-downloads.json" | jq -r ".milestones[\"$CHROME_MAJOR\"].downloads.chromeDriver[] | select(.platform == \"linux64\").url")
+            echo "⚠️ Nessuna versione esatta trovata per ChromeDriver $CHROME_MAJOR, scarico l'ultima versione stabile disponibile..."
+            LATEST_DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json" | jq -r ".versions[-1].downloads.chromeDriver[] | select(.platform == \"linux64\").url")
+            
             if [ -z "$LATEST_DRIVER_URL" ]; then
-              echo "❌ ERRORE: Nessuna versione di ChromeDriver disponibile per Chrome $CHROME_VERSION!"
+              echo "❌ ERRORE: Nessuna versione di ChromeDriver disponibile!"
               exit 1
             fi
+            
             DRIVER_URL=$LATEST_DRIVER_URL
           else
             DRIVER_URL=$(echo "$DRIVER_INFO" | jq -r ".downloads.chromeDriver[] | select(.platform == \"linux64\").url")
           fi
-          
+
           echo "✅ Trovato ChromeDriver: $DRIVER_URL"
-          
+
           wget "$DRIVER_URL" -O chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           chmod +x /usr/local/bin/chromedriver
+
 
 
       - name: Run scraper
