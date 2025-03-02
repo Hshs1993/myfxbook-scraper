@@ -25,15 +25,35 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y wget unzip curl jq
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' )
-          echo "chrome version: $CHROME_VERSION"
-          DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json" | jq -r ".builds[\"$CHROME_VERSION\"].downloads.chromeDriver[] | select(.platform == \"linux64\").url")
-          if [ -z "$DRIVER_URL" ]; then echo "❌ ERRORE: Nessun link trovato per ChromeDriver"; exit 1; fi
-          echo "✅ Trovato ChromeDriver URL: $DRIVER_URL"
+          
+          # Trova la versione principale di Chrome installata
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
+          CHROME_MAJOR=$(echo $CHROME_VERSION | cut -d'.' -f1)
+          
+          echo "🔍 Versione di Chrome rilevata: $CHROME_VERSION (Major: $CHROME_MAJOR)"
+          
+          # Controlla se esiste una versione di ChromeDriver corrispondente
+          DRIVER_INFO=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json" | jq -r ".builds[\"$CHROME_MAJOR\"]")
+
+          if [ "$DRIVER_INFO" = "null" ] || [ -z "$DRIVER_INFO" ]; then
+            echo "❌ ERRORE: Nessuna versione disponibile per ChromeDriver corrispondente a Chrome $CHROME_VERSION"
+            exit 1
+          fi
+          
+          DRIVER_URL=$(echo "$DRIVER_INFO" | jq -r ".downloads.chromeDriver[] | select(.platform == \"linux64\").url")
+          
+          if [ -z "$DRIVER_URL" ]; then
+            echo "❌ ERRORE: Nessun link valido per ChromeDriver!"
+            exit 1
+          fi
+          
+          echo "✅ Trovato ChromeDriver: $DRIVER_URL"
+          
           wget "$DRIVER_URL" -O chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           chmod +x /usr/local/bin/chromedriver
+
 
       - name: Run scraper
         run: python scraper.py
