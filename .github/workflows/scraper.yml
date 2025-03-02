@@ -32,10 +32,14 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/Hshs1993/myfxbook-scraper.git
+          git remote remove origin
+          git remote add origin https://x-access-token:${GH_TOKEN}@github.com/Hshs1993/myfxbook-scraper.git
+          git fetch origin
+          git branch --set-upstream-to=origin/main main
           git add myfxbook_data.csv
           git commit -m "Aggiornamento dati Myfxbook $(date '+%Y-%m-%d %H:%M:%S')" || echo "Nessuna modifica da commettere"
           git push origin main || echo "Nessuna modifica da pushare"
+
 
 
 
