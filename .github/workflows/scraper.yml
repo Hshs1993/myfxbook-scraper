@@ -2,31 +2,46 @@ name: Myfxbook Scraper
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Esegui ogni 30 minuti
-  workflow_dispatch:  # Permette di avviarlo manualmente
+    - cron: '0 * * * *'  # Esegue il job ogni ora
+  workflow_dispatch:  # Permette di avviare il workflow manualmente
 
 jobs:
-  scrape:
+  scrape_data:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
-          pip install selenium webdriver-manager pandas
+          pip install --upgrade pip
+          pip install selenium webdriver-manager
 
-      - name: Run Scraper
+      - name: Install Chrome & ChromeDriver
+        run: |
+          sudo apt update
+          sudo apt install -y google-chrome-stable
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
+          DRIVER_VERSION=$(curl -s https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json | jq -r '.channels.Stable.downloads.chromeDriver[] | select(.platform=="linux64") | .version' | head -n 1)
+          wget -q -O chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/$DRIVER_VERSION/linux64/chromedriver-linux64.zip"
+          unzip chromedriver.zip
+          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
+          sudo chmod +x /usr/local/bin/chromedriver
+          rm -rf chromedriver.zip chromedriver-linux64
+
+      - name: Run the scraper
         run: python scraper.py
 
-      - name: Upload CSV File
-        uses: actions/upload-artifact@v4
-        with:
-          name: myfxbook-data
-          path: myfxbook_data.csv
+      - name: Commit and push CSV file
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+          git add myfxbook_data.csv
+          git commit -m "Aggiornamento dati Myfxbook $(date '+%Y-%m-%d %H:%M:%S')" || echo "Nessuna modifica da commettere"
+          git push origin main || echo "Nessuna modifica da pushare"
