@@ -2,7 +2,7 @@ name: Myfxbook Scraper
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Esegue il job ogni ora
+      - cron: '0 */4 * * *'  # Esegue il job ogni 4 ore
   workflow_dispatch:  # Permette di avviare il workflow manualmente
 
 jobs:
