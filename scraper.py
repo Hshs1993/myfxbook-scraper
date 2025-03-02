@@ -1,5 +1,7 @@
 import time
 import csv
+import os
+import re  # Per pulire i dati
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -8,63 +10,110 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Impostazioni Selenium
+# Lista delle coppie di valute da analizzare
+currency_pairs = [
+            "EURUSD", "GBPUSD", "USDJPY", "USDCHF", 
+            "AUDUSD", "NZDUSD", "USDCAD", "EURGBP",
+            "EURJPY", "EURCHF", "GBPJPY", "GBPCHF",
+            "AUDJPY", "AUDNZD", "NZDJPY", "CADJPY",
+            "EURAUD","AUDCAD","AUDNZD","EURNZD","GBPCAD","NZDCAD"
+        ]
+
+
+# Percorso CSV (su GitHub Actions viene salvato nella cartella del repo)
+CSV_FILE = "myfxbook_data.csv"
+
+# Configurazione Selenium (ottimizzata)
 chrome_options = Options()
 chrome_options.add_argument("--headless")  # Esegue senza interfaccia grafica
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("start-maximized")
+chrome_options.add_argument("enable-automation")
+chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
-# Imposta un user-agent personalizzato per evitare il blocco
-chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36")
+def extract_number(text):
+    """Estrae solo il numero da una stringa come '15,999 lots'"""
+    match = re.search(r"[\d,]+", text)  # Trova numeri con virgole
+    if match:
+        return match.group(0).replace(",", "")  # Rimuove la virgola e restituisce solo il numero
+    return None
 
-def get_myfxbook_data():
-    """Recupera le percentuali Long/Short da Myfxbook"""
-    
-    # Usa WebDriver Manager per gestire ChromeDriver
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    
+def get_myfxbook_data(driver, pair):
+    """Recupera le percentuali Long/Short, i lotti e le posizioni per una specifica coppia di valute"""
+
+    url = f"https://www.myfxbook.com/community/outlook/{pair}"
+    driver.get(url)
+
     try:
-        driver.get("https://www.myfxbook.com/community/outlook/EURUSD")
-        
-        wait = WebDriverWait(driver, 20)  # Aspetta un po' più a lungo
-        time.sleep(5)  # Attendi 5 secondi per il caricamento della pagina
-        
-        # Stampa il contenuto della pagina per debug
-        print(driver.page_source[:500])  # Mostra solo i primi 500 caratteri
+        # Aspetta il caricamento della tabella (max 10 sec)
+        wait = WebDriverWait(driver, 10)
+        table = wait.until(EC.presence_of_element_located((By.ID, "currentMetricsTable")))
 
-        # Trova gli elementi delle percentuali
-        long_element = wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'outlook-percentage-long')]")))
-        short_element = wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'outlook-percentage-short')]")))
+        # Trova le righe della tabella
+        rows = table.find_elements(By.TAG_NAME, "tr")
 
-        long_percentage = long_element.text.strip()
-        short_percentage = short_element.text.strip()
+        # Variabili per memorizzare i dati
+        long_percentage, short_percentage = None, None
+        lots_long, lots_short = None, None
+        positions_long, positions_short = None, None
 
-        if not long_percentage or not short_percentage:
-            raise ValueError("❌ Errore: Dati non trovati!")
+        for row in rows:
+            cells = row.find_elements(By.TAG_NAME, "td")
+            if len(cells) >= 4:  # La riga deve avere almeno 4 colonne
+                action = cells[0].text.strip()  # Long o Short
+                percentage = cells[1].text.strip()
+                lots = extract_number(cells[2].text.strip())  # Rimuove "lots"
+                positions = extract_number(cells[3].text.strip())  # Rimuove le "," nelle posizioni
 
-        return long_percentage, short_percentage
+                if "Long" in action:
+                    long_percentage = percentage
+                    lots_long = lots
+                    positions_long = positions
+                elif "Short" in action:
+                    short_percentage = percentage
+                    lots_short = lots
+                    positions_short = positions
+
+        # Controllo che tutti i dati siano presenti
+        if not all([long_percentage, short_percentage, lots_long, lots_short, positions_long, positions_short]):
+            print(f"⚠️ Dati incompleti per {pair}!")
+            return pair, None, None, None, None, None, None
+
+        return pair, long_percentage, short_percentage, lots_long, lots_short, positions_long, positions_short
 
     except Exception as e:
-        print(f"❌ Errore durante il recupero dei dati: {e}")
-        return None, None
-
-    finally:
-        driver.quit()
+        print(f"❌ Errore su {pair}: {e}")
+        return pair, None, None, None, None, None, None
 
 def save_to_csv():
-    """Salva i dati su un file CSV"""
-    long_percentage, short_percentage = get_myfxbook_data()
-    if long_percentage and short_percentage:
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    """Salva i dati per più coppie di valute su un file CSV, più veloce"""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
-        with open("myfxbook_data.csv", "a", newline="", encoding="utf-8") as file:
-            writer = csv.writer(file)
-            writer.writerow([timestamp, long_percentage, short_percentage])
+    # Usa una singola istanza di Selenium per tutto il processo
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.implicitly_wait(3)  # Attesa implicita per ridurre il codice di attesa manuale
 
-        print(f"✅ {timestamp} | Long: {long_percentage} | Short: {short_percentage}")
-    else:
-        print("⚠️ Nessun dato valido da salvare.")
+    # Verifica se il CSV esiste
+    file_exists = os.path.isfile(CSV_FILE)
+
+    with open(CSV_FILE, "a", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+
+        # Scrive l'header solo se il file non esiste
+        if not file_exists:
+            writer.writerow(["Timestamp", "Pair", "Long %", "Short %", "Lots Long", "Lots Short", "Positions Long", "Positions Short"])
+
+        for pair in currency_pairs:
+            pair, long_percentage, short_percentage, lots_long, lots_short, positions_long, positions_short = get_myfxbook_data(driver, pair)
+            if all([long_percentage, short_percentage, lots_long, lots_short, positions_long, positions_short]):
+                writer.writerow([timestamp, pair, long_percentage, short_percentage, lots_long, lots_short, positions_long, positions_short])
+                print(f"✅ {timestamp} | {pair} | Long: {long_percentage} | Short: {short_percentage} | Lots Long: {lots_long} | Lots Short: {lots_short} | Positions Long: {positions_long} | Positions Short: {positions_short}")
+            else:
+                print(f"⚠️ Nessun dato valido per {pair}")
+
+    driver.quit()  # Chiudi il browser solo alla fine
 
 if __name__ == "__main__":
     save_to_csv()
