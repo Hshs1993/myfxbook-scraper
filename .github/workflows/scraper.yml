@@ -2,38 +2,31 @@ name: Myfxbook Scraper
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Esegui ogni 10 minuti
-  workflow_dispatch:  # Permette di avviare manualmente l'azione
+    - cron: '*/30 * * * *'  # Esegui ogni 30 minuti
+  workflow_dispatch:  # Permette di avviarlo manualmente
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
-          pip install selenium
-      - name: Install Chrome and ChromeDriver via APT
-        run: |
-          sudo apt update
-          sudo apt install -y google-chrome-stable chromium-chromedriver
-          echo "✅ Chrome e ChromeDriver installati con successo!"
+          pip install selenium webdriver-manager pandas
 
-
-      - name: Run scraper
+      - name: Run Scraper
         run: python scraper.py
-      - name: Commit and Push CSV
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add myfxbook_data.csv
-          git commit -m "Aggiornamento dati Myfxbook"
-          git push
+
+      - name: Upload CSV File
+        uses: actions/upload-artifact@v4
+        with:
+          name: myfxbook-data
+          path: myfxbook_data.csv
