@@ -26,21 +26,21 @@ jobs:
       - name: Run the scraper
         run: python scraper.py
 
+      - name: Debug: Mostra i file nel repository
+        run: |
+          ls -lah
+          git status
+
       - name: Commit and push CSV file
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git remote remove origin
+          git remote remove origin || true
           git remote add origin https://x-access-token:${GH_TOKEN}@github.com/Hshs1993/myfxbook-scraper.git
           git fetch origin
-          git branch --set-upstream-to=origin/main main
+          git branch --set-upstream-to=origin/main main || true
           git add myfxbook_data.csv
           git commit -m "Aggiornamento dati Myfxbook $(date '+%Y-%m-%d %H:%M:%S')" || echo "Nessuna modifica da commettere"
           git push origin main || echo "Nessuna modifica da pushare"
-
-
-
-
-
