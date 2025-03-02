@@ -32,9 +32,11 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/Hshs1993/myfxbook-scraper.git
           git add myfxbook_data.csv
           git commit -m "Aggiornamento dati Myfxbook $(date '+%Y-%m-%d %H:%M:%S')" || echo "Nessuna modifica da commettere"
-          git push https://x-access-token:${GH_TOKEN}@github.com/Hshs1993/myfxbook-scraper.git main || echo "Nessuna modifica da pushare"
+          git push origin main || echo "Nessuna modifica da pushare"
+
 
 
 
