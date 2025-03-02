@@ -40,7 +40,9 @@ jobs:
           git remote remove origin || true
           git remote add origin https://x-access-token:${GH_TOKEN}@github.com/Hshs1993/myfxbook-scraper.git
           git fetch origin
-          git branch --set-upstream-to=origin/main main || true
+          git checkout main
           git add myfxbook_data.csv
           git commit -m "Aggiornamento dati Myfxbook $(date '+%Y-%m-%d %H:%M:%S')" || echo "Nessuna modifica da commettere"
-          git push origin main || echo "Nessuna modifica da pushare"
+          GIT_ASKPASS=/bin/echo git push origin main || echo "Nessuna modifica da pushare"
+
+
