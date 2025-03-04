@@ -2,7 +2,7 @@ name: Append Myfxbook Data to Google Drive
 
 on:
   schedule:
-     - cron: "0 * * * *"  # Esegue ogni ora
+    - cron: "0 * * * *"  # Esegue ogni ora
   workflow_dispatch:  # Permette di eseguirlo manualmente
 
 jobs:
@@ -32,6 +32,9 @@ jobs:
           unzip chromedriver_linux64.zip
           sudo mv chromedriver /usr/local/bin/
           chmod +x /usr/local/bin/chromedriver
+
+      - name: Debug Environment Variables
+        run: echo "✅ GOOGLE_DRIVE_CREDENTIALS is set"
 
       - name: Run script
         env:
