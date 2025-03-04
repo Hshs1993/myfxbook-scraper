@@ -24,7 +24,7 @@ currency_pairs = [
     "EURAUD", "AUDCAD", "AUDNZD", "EURNZD", "GBPCAD", "NZDCAD"
 ]
 
-# ID della cartella Google Drive
+# ID della cartella Google Drive (assicurati che sia corretto!)
 GOOGLE_DRIVE_FOLDER_ID = "1J6DfKmrhAOOennODNkdIbT56As1zbllA"
 # Nome del file CSV
 CSV_FILE = "myfxbook_data.csv"
@@ -53,6 +53,15 @@ def get_google_drive_service():
     SCOPES = ["https://www.googleapis.com/auth/drive.file"]
     creds = service_account.Credentials.from_service_account_info(credentials, scopes=SCOPES)
     return build("drive", "v3", credentials=creds)
+
+def verify_drive_folder_access(service):
+    """Verifica se il Service Account può accedere alla cartella Google Drive."""
+    try:
+        folder_info = service.files().get(fileId=GOOGLE_DRIVE_FOLDER_ID).execute()
+        print(f"✅ Il Service Account può accedere alla cartella: {folder_info['name']}")
+    except Exception as e:
+        print(f"❌ ERRORE: Il Service Account NON ha accesso alla cartella! {e}")
+        exit(1)
 
 def download_csv_from_drive(service):
     """Scarica il CSV esistente da Google Drive (se presente)."""
@@ -124,6 +133,8 @@ def get_myfxbook_data(driver, pair):
 def save_and_upload_csv():
     """Scarica il CSV, aggiunge nuovi dati e ricarica il file aggiornato."""
     service = get_google_drive_service()
+    verify_drive_folder_access(service)  # Verifica l'accesso alla cartella
+
     existing_data = download_csv_from_drive(service)
 
     if not existing_data:
@@ -148,15 +159,7 @@ def save_and_upload_csv():
 
     print(f"✅ CSV aggiornato con {len(new_data)} nuove righe.")
 
-    try:
-        folder_check = service.files().get(fileId=GOOGLE_DRIVE_FOLDER_ID).execute()
-        print(f"✅ Il Service Account può accedere alla cartella: {folder_check['name']}")
-    except Exception as e:
-        print(f"❌ ERRORE: Il Service Account NON ha accesso alla cartella! {e}")
-        exit(1)
-
     file_metadata = {"name": CSV_FILE, "parents": [GOOGLE_DRIVE_FOLDER_ID]}
-
     media = MediaFileUpload(CSV_FILE, mimetype="text/csv")
 
     try:
