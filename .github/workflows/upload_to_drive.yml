@@ -1,4 +1,4 @@
-name: Append Myfxbook Data to Google Drive
+name: MyFxBook Data to Google Drive
 
 on:
   schedule:
@@ -22,7 +22,7 @@ jobs:
         run: python -m pip install --upgrade pip
 
       - name: Install dependencies
-        run: pip install --upgrade google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 selenium webdriver-manager
+        run: pip install --upgrade selenium webdriver-manager google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
 
       - name: Set up ChromeDriver
         run: |
@@ -33,10 +33,10 @@ jobs:
           sudo mv chromedriver /usr/local/bin/
           chmod +x /usr/local/bin/chromedriver
 
-      - name: Debug Environment Variables
-        run: echo "✅ GOOGLE_DRIVE_CREDENTIALS is set"
+      - name: Create credentials.json file
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        run: echo "$GOOGLE_CREDENTIALS_JSON" > credentials.json
 
       - name: Run script
-        env:
-          GOOGLE_DRIVE_CREDENTIALS: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
         run: python myFxBook-to-drive.py
