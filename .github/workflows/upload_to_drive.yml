@@ -18,9 +18,11 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
       - name: Install dependencies
-        run: |
-          pip install selenium webdriver-manager google-auth google-auth-oauthlib google-auth-httplib2 googleapiclient
+        run: pip install --upgrade google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 selenium webdriver-manager
 
       - name: Set up ChromeDriver
         run: |
