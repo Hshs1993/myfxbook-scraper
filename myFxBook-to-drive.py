@@ -148,7 +148,15 @@ def save_and_upload_csv():
 
     print(f"✅ CSV aggiornato con {len(new_data)} nuove righe.")
 
+    try:
+        folder_check = service.files().get(fileId=GOOGLE_DRIVE_FOLDER_ID).execute()
+        print(f"✅ Il Service Account può accedere alla cartella: {folder_check['name']}")
+    except Exception as e:
+        print(f"❌ ERRORE: Il Service Account NON ha accesso alla cartella! {e}")
+        exit(1)
+
     file_metadata = {"name": CSV_FILE, "parents": [GOOGLE_DRIVE_FOLDER_ID]}
+
     media = MediaFileUpload(CSV_FILE, mimetype="text/csv")
 
     try:
