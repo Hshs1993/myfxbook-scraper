@@ -25,7 +25,7 @@ currency_pairs = [
 ]
 
 # ID della cartella Google Drive
-GOOGLE_DRIVE_FOLDER_ID = "1J6DfKmrhA00enn0DNkdIbT56As1zbllA"
+GOOGLE_DRIVE_FOLDER_ID = "1J6DfKmrhAOOennODNkdIbT56As1zbllA"
 # Nome del file CSV
 CSV_FILE = "myfxbook_data.csv"
 
