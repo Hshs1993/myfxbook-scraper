@@ -16,7 +16,7 @@ currency_pairs = [
             "AUDUSD", "NZDUSD", "USDCAD", "EURGBP",
             "EURJPY", "EURCHF", "GBPJPY", "GBPCHF",
             "AUDJPY", "AUDNZD", "NZDJPY", "CADJPY",
-            "EURAUD","AUDCAD","AUDNZD","EURNZD","GBPCAD","NZDCAD"
+            "EURAUD","AUDCAD","AUDNZD","EURNZD","GBPCAD","NZDCAD","XAUUSD","XAGUSD","XPDUSD","CHFJPY"
         ]
 
 
